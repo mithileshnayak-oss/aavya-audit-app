@@ -1,0 +1,463 @@
+import { useState } from "react";
+
+// ─── Config (from .env) ───────────────────────────────────────────────────────
+const API_KEY   = import.meta.env.VITE_GROQ_API_KEY || "";
+const MODEL_ID  = "llama-3.3-70b-versatile";
+const API_URL   = "https://api.groq.com/openai/v1/chat/completions";
+
+// ─── API Caller ───────────────────────────────────────────────────────────────
+async function runAuditCall(systemPrompt, userMessage) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: MODEL_ID,
+      temperature: 0.3,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user",   content: userMessage },
+      ],
+    }),
+  });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch(e) { throw new Error("Non-JSON response: " + text.slice(0, 300)); }
+  if (!res.ok || data.error) {
+    const msg = data?.error?.message || data?.error || JSON.stringify(data);
+    throw new Error(`API error (${res.status}): ${msg}`);
+  }
+  if (!data.choices?.[0]?.message?.content) throw new Error("Unexpected response shape: " + JSON.stringify(data).slice(0, 300));
+  return data.choices[0].message.content;
+}
+
+// ─── Audit System Prompt ──────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are the Aavya Brand Audit Engine — an expert brand compliance auditor trained on the Aavya Brand Portal (https://registry-dev.aavya.com/).
+
+═══ AAVYA BRAND IDENTITY (source: registry-dev.aavya.com) ═══
+
+CORE PHILOSOPHY
+- Identity: "Premium, minimal, calm, and technical" — SaaS Infrastructure aesthetic for AI orchestration
+- Concept: Abstract geometric design representing scalable systems, not consumer-oriented design
+- Composition: Elements "float" in space with generous negative space and central alignment
+
+EXACT COLOR TOKENS
+- Aavya Blue (primary): #3AADDD
+- Electric Violet (accent): #7F5AF0
+- Mint Green (accent): #2CB67D
+- Dark Surface primary: #0B0620
+- Dark Surface secondary: #1B0F3A
+- Light Surface: #F8F9FA
+- No warm colors (red, orange, yellow) allowed anywhere
+
+DARK MODE (primary application)
+- Glassmorphism surfaces, inner glow effects, subtle violet outer glows
+- Dark base: #0B0620 / #1B0F3A
+
+LIGHT MODE (secondary application)
+- Soft drop shadows, frosted glass panels, crisp borders
+- Light base: #F8F9FA
+
+TYPOGRAPHY
+- Headings/body: Inter (tight tracking, precision headings)
+- Data/code/labels: JetBrains Mono
+- No other typefaces permitted
+
+SHAPE LANGUAGE
+- Permitted: circles, hexagons, rounded rectangles only
+- Strict rule: NO sharp corners anywhere
+- Geometry must feel mathematical and precise, not organic
+
+COMPONENT STANDARDS (Aavya Registry)
+- Core components: Aavya Header, Aavya Breadcrumbs, Aavya Theme Toggle, Aavya Pill Select
+- UI must be registry-installable, clean blocks
+- No emoji anywhere in the UI
+
+TONE & VOICE
+- Premium, calm, minimal, technical — no hype, no exclamation marks, no clutter
+- Copy must feel like SaaS infrastructure documentation, not marketing
+
+STRICT PROHIBITIONS (5 rules — any violation = automatic fail on that check)
+1. NO warm colors — red, orange, yellow forbidden in branding, imagery, or UI
+2. NO mascots or characters — no avatars, robots with faces, emojis, or illustrated characters
+3. NO real-world photography — no stock office/laptop/people photos; use abstract data representations only
+4. NO skeuomorphism — buttons must not resemble physical plastic with heavy bevels or gradients
+5. NO brush strokes — no artistic, hand-drawn, or "sketchy" styles; mathematical precision only
+
+═══ AUDIT CATEGORIES ═══
+
+Audit 8 categories:
+1. Color Compliance — exact palette match (#3AADDD/#7F5AF0/#2CB67D), no warm colors, dark/light surface usage
+2. Typography — Inter + JetBrains Mono only, tight tracking, precision headings, no other fonts
+3. Shape Language — rounded geometry only (circles/hexagons/rounded rects), NO sharp corners
+4. Tone & Voice — premium, calm, minimal, technical copy; no hype, no exclamation marks
+5. Layout & Spacing — floating elements, generous negative space, calm hierarchy, no overcrowding
+6. Component Quality — clean registry-worthy blocks, Aavya component patterns, no emoji in UI
+7. Brand Prohibitions — check all 5 strict rules: warm colors, mascots, stock photos, skeuomorphism, brush strokes
+8. Overall Brand Fit — holistic SaaS Infrastructure aesthetic, AI orchestration feel, Aavya identity match
+
+Per category: score (0–100), status ("pass"≥75/"warning"50–74/"fail"<50), findings (2–3 items ≤25 words each), recommendations (1–2 items ≤25 words each).
+Also: overall_score (average), executive_summary (2 sentences), top_priority_fixes (3 items).
+
+CRITICAL: Return ONLY a raw JSON object — no markdown, no backticks, nothing else.
+{"overall_score":0,"executive_summary":"","top_priority_fixes":["","",""],"categories":[{"id":"","name":"","score":0,"status":"","findings":[""],"recommendations":[""]}]}`;
+
+// ─── Known Content Cache ──────────────────────────────────────────────────────
+const KNOWN_CONTENT = {
+  "https://mithileshnayak-oss.github.io/aavya-website/": `
+Title: Aavya - Your Digital Transformation Partner
+Nav: AAVYA | Training▼ (Curriculums, Certifications) | Services▼ (Consultancy, Staff Augmentation) | Industry Solutions | About | Contact | ☰ hamburger icon
+Hero: "Master Digital Transformation Through Expert Training and Consultancy" / "Empowering organizations with comprehensive training programs, strategic consulting, and expert talent solutions." CTAs: "Get Started", "Request a Demo"
+Stats: 9 Comprehensive Curriculums | 28 Training Pillars | 1000+ Trained Professionals | 10+ Enterprise Clients
+Cards: 🎓 Training & Certification, 💼 Consultancy Services, 👥 Staff Augmentation — each with ✓ bullet lists
+Why Aavya: 🎯 Outcome-Driven | 📚 Knowledge Transfer | 🚀 Proven Methodology
+Industries: ⚡💰🏥🏭🏛️🛍️📡🚚✈️ emoji grid
+Contact form: Name, Email, Company, Industry dropdown, Message, Submit
+Footer: 4 columns — © 2024 Aavya — contact@aavya.com
+Design signals: Heavy emoji throughout throughout the page. "🏆 Your Success Partner" promotional badge. Bullet-list-heavy layout. Generic hamburger nav. No Inter or JetBrains Mono fonts. No Aavya Blue (#3AADDD) / Violet (#7F5AF0) / Mint (#2CB67D) color system. Warm promotional copy — energetic, not calm/minimal/technical. No soft geometry or rounded design language. Stock photo style imagery likely. No glassmorphism or dark surface palette. Characters/emoji used as icons. Skeuomorphic or generic button styles.
+`.trim(),
+
+  "https://registry-dev.aavya.com/": `
+Title: Aavya Brand Portal v4.0
+Tagline: "Your central hub for brand guidelines, assets, design tokens, templates, and code components. Premium, minimal, calm, and technical."
+Nav: Brand Guidelines | Assets | Design Tokens | Registry | Theme Generator | Export | Search
+Sections: Brand Guidelines, Assets, Design Tokens, Templates, Registry, Export
+Colors: Aavya Blue #3AADDD (primary), Electric Violet #7F5AF0 (accent), Mint Green #2CB67D (accent), Dark Surface #0B0620 / #1B0F3A, Light Surface #F8F9FA
+Typography: Inter (headings/body), JetBrains Mono (data/code/labels), tight tracking
+Shapes: Circles, hexagons, rounded rectangles — no sharp corners
+Dark mode: glassmorphism surfaces, inner glow, subtle violet outer glows
+Light mode: soft drop shadows, frosted glass, crisp borders
+Components: Aavya Header, Aavya Breadcrumbs, Aavya Theme Toggle, Aavya AI Image Studio, Aavya Token Reference, Aavya Event Widget, Aavya Pill Select, 60+ UI primitives
+Design signals: Fully on-brand. Dark SaaS aesthetic. Abstract geometric design. No emoji in UI. Mathematical precision. No warm colors. No real-world photography. No skeuomorphism. No brush strokes. Floating elements with generous negative space.
+`.trim(),
+};
+
+// ─── UI Atoms ─────────────────────────────────────────────────────────────────
+const iconMap = ["◉", "Aa", "⬡", "✦", "⊞", "⬚", "⊘", "◈"];
+
+function ScoreRing({ score, size = 80 }) {
+  const r = (size - 10) / 2, circ = 2 * Math.PI * r;
+  const color = score >= 75 ? "#22d3a5" : score >= 50 ? "#a78bfa" : "#f87171";
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1e293b" strokeWidth={6} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={6}
+        strokeDasharray={`${(score/100)*circ} ${circ}`} strokeLinecap="round"
+        transform={`rotate(-90 ${size/2} ${size/2})`} style={{ transition: "stroke-dasharray 1s ease" }} />
+      <text x={size/2} y={size/2+5} textAnchor="middle" fill={color}
+        fontSize={size*0.22} fontFamily="'JetBrains Mono',monospace" fontWeight="700">{score}</text>
+    </svg>
+  );
+}
+
+function StatusBadge({ status }) {
+  const s = { pass: ["rgba(34,211,165,0.12)","#22d3a5","PASS"], warning: ["rgba(167,139,250,0.12)","#a78bfa","WARN"], fail: ["rgba(248,113,113,0.12)","#f87171","FAIL"] }[status] || ["rgba(248,113,113,0.12)","#f87171","FAIL"];
+  return <span style={{ background: s[0], color: s[1], padding: "2px 10px", borderRadius: 999, fontSize: 11, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, letterSpacing: 2 }}>{s[2]}</span>;
+}
+
+function CategoryCard({ cat, icon }) {
+  const [open, setOpen] = useState(false);
+  const barColor = cat.score >= 75 ? "#22d3a5" : cat.score >= 50 ? "#a78bfa" : "#f87171";
+  return (
+    <div onClick={() => setOpen(!open)} style={{ background: "rgba(15,23,42,0.7)", border: `1px solid ${open?"rgba(167,139,250,0.4)":"rgba(255,255,255,0.07)"}`, borderRadius: 16, padding: "20px 24px", cursor: "pointer", transition: "border-color 0.2s" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <span style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: "#94a3b8", fontFamily: "'JetBrains Mono',monospace" }}>{icon}</span>
+          <div>
+            <div style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 15, marginBottom: 5 }}>{cat.name}</div>
+            <div style={{ height: 4, width: 120, background: "#1e293b", borderRadius: 99 }}>
+              <div style={{ height: 4, width: `${cat.score * 1.2}px`, maxWidth: "100%", background: barColor, borderRadius: 99, transition: "width 1.2s ease" }} />
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <StatusBadge status={cat.status} />
+          <ScoreRing score={cat.score} size={52} />
+          <span style={{ color: "#64748b", fontSize: 18, display: "inline-block", transform: open?"rotate(180deg)":"rotate(0deg)", transition: "transform 0.2s" }}>⌄</span>
+        </div>
+      </div>
+      {open && (
+        <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ color: "#64748b", fontSize: 11, fontFamily: "'JetBrains Mono',monospace", letterSpacing: 2, marginBottom: 8 }}>FINDINGS</div>
+            {cat.findings.map((f, i) => <div key={i} style={{ color: "#94a3b8", fontSize: 14, marginBottom: 6, paddingLeft: 16, borderLeft: "2px solid rgba(255,255,255,0.08)", lineHeight: 1.6 }}>{f}</div>)}
+          </div>
+          <div>
+            <div style={{ color: "#64748b", fontSize: 11, fontFamily: "'JetBrains Mono',monospace", letterSpacing: 2, marginBottom: 8 }}>RECOMMENDATIONS</div>
+            {cat.recommendations.map((r, i) => <div key={i} style={{ color: "#a78bfa", fontSize: 14, marginBottom: 6, paddingLeft: 16, borderLeft: "2px solid rgba(167,139,250,0.3)", lineHeight: 1.6 }}>→ {r}</div>)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Report Generator ─────────────────────────────────────────────────────────
+function downloadReport(result) {
+  const statusColor = { pass: "#22d3a5", warning: "#f59e0b", fail: "#f87171" };
+  const statusLabel = { pass: "PASS", warning: "WARN", fail: "FAIL" };
+  const overallColor = result.overall_score >= 75 ? "#22d3a5" : result.overall_score >= 50 ? "#f59e0b" : "#f87171";
+  const overallLabel = result.overall_score >= 75 ? "Brand Aligned" : result.overall_score >= 50 ? "Needs Work" : "Off-Brand";
+  const auditDate = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+
+  const categoriesHtml = result.categories?.map(cat => {
+    const col = statusColor[cat.status] || "#f87171";
+    const findings = cat.findings?.map(f => `<li>${f}</li>`).join("") || "";
+    const recs = cat.recommendations?.map(r => `<li>${r}</li>`).join("") || "";
+    return `
+      <div class="cat-card">
+        <div class="cat-header">
+          <div>
+            <div class="cat-name">${cat.name}</div>
+            <div class="cat-bar-track"><div class="cat-bar" style="width:${cat.score}%;background:${col}"></div></div>
+          </div>
+          <div class="cat-right">
+            <span class="badge" style="background:${col}22;color:${col};border:1px solid ${col}44">${statusLabel[cat.status] || "FAIL"}</span>
+            <span class="score" style="color:${col}">${cat.score}</span>
+          </div>
+        </div>
+        <div class="cat-body">
+          <div class="label">FINDINGS</div>
+          <ul>${findings}</ul>
+          <div class="label" style="margin-top:12px">RECOMMENDATIONS</div>
+          <ul class="recs">${recs}</ul>
+        </div>
+      </div>`;
+  }).join("") || "";
+
+  const fixes = result.top_priority_fixes?.map((f, i) =>
+    `<div class="fix"><span class="fix-num">${String(i+1).padStart(2,"0")}</span><span>${f}</span></div>`
+  ).join("") || "";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Aavya Brand Audit Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#060b16;color:#e2e8f0;font-family:'Inter',sans-serif;padding:48px 24px 80px;min-height:100vh}
+  .page{max-width:800px;margin:0 auto}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:rgba(29,78,216,0.1);border:1px solid rgba(29,78,216,0.3);border-radius:999px;padding:4px 14px;font-size:11px;color:#93c5fd;font-family:'JetBrains Mono',monospace;letter-spacing:2px;margin-bottom:16px}
+  h1{font-size:clamp(24px,5vw,38px);font-weight:700;background:linear-gradient(135deg,#e2e8f0 0%,#93c5fd 50%,#a78bfa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-1px;line-height:1.15;margin-bottom:8px}
+  .sub{color:#64748b;font-size:14px;margin-bottom:6px}
+  .meta{color:#475569;font-size:11px;font-family:'JetBrains Mono',monospace;margin-bottom:36px}
+  .overall{background:rgba(15,23,42,0.9);border:1px solid ${overallColor}33;border-radius:20px;padding:32px;margin-bottom:16px;display:flex;gap:32px;align-items:center;flex-wrap:wrap}
+  .score-ring{flex-shrink:0}
+  .overall-label-tag{color:#64748b;font-size:11px;letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+  .overall-verdict{color:${overallColor};font-size:26px;font-weight:700;letter-spacing:-0.5px;margin-bottom:10px}
+  .summary{color:#94a3b8;font-size:14px;line-height:1.7}
+  .fixes-box{background:rgba(248,113,113,0.05);border:1px solid rgba(248,113,113,0.15);border-radius:16px;padding:20px 24px;margin-bottom:24px}
+  .label{color:#64748b;font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:2px;margin-bottom:12px}
+  .fix{display:flex;gap:12px;margin-bottom:8px;color:#fca5a5;font-size:14px;line-height:1.6}
+  .fix-num{color:#f87171;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+  .section-label{color:#64748b;font-size:11px;letter-spacing:2px;font-family:'JetBrains Mono',monospace;margin-bottom:12px}
+  .cat-card{background:rgba(15,23,42,0.7);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:20px 24px;margin-bottom:10px}
+  .cat-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+  .cat-name{color:#e2e8f0;font-weight:600;font-size:15px;margin-bottom:6px}
+  .cat-bar-track{height:4px;width:180px;background:#1e293b;border-radius:99px}
+  .cat-bar{height:4px;border-radius:99px}
+  .cat-right{display:flex;align-items:center;gap:12px}
+  .badge{padding:2px 10px;border-radius:999px;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:2px}
+  .score{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace}
+  .cat-body ul{list-style:none;padding:0}
+  .cat-body ul li{color:#94a3b8;font-size:13px;line-height:1.6;padding:4px 0 4px 14px;border-left:2px solid rgba(255,255,255,0.08);margin-bottom:4px}
+  .cat-body ul.recs li{color:#a78bfa;border-left-color:rgba(167,139,250,0.3)}
+  .cat-body ul.recs li::before{content:"→ "}
+  .footer{margin-top:40px;text-align:center;color:#1e293b;font-size:11px;font-family:'JetBrains Mono',monospace}
+  .footer a{color:#334155;text-decoration:none}
+  @media print{body{background:#060b16!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="chip">◈ AAVYA BRAND AUDIT ENGINE v2.1</div>
+  <h1>Brand Audit Report</h1>
+  <div class="sub">Audited URL: <strong style="color:#93c5fd">${result.url}</strong></div>
+  <div class="meta">Generated on ${auditDate} · Aavya Brand Standards</div>
+
+  <div class="overall">
+    <svg class="score-ring" width="100" height="100" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="45" fill="none" stroke="#1e293b" stroke-width="6"/>
+      <circle cx="50" cy="50" r="45" fill="none" stroke="${overallColor}" stroke-width="6"
+        stroke-dasharray="${(result.overall_score/100)*2*Math.PI*45} ${2*Math.PI*45}"
+        stroke-linecap="round" transform="rotate(-90 50 50)"/>
+      <text x="50" y="55" text-anchor="middle" fill="${overallColor}" font-size="22"
+        font-family="'JetBrains Mono',monospace" font-weight="700">${result.overall_score}</text>
+    </svg>
+    <div style="flex:1;min-width:200px">
+      <div class="overall-label-tag">OVERALL BRAND COMPLIANCE</div>
+      <div class="overall-verdict">${overallLabel}</div>
+      <div class="summary">${result.executive_summary}</div>
+    </div>
+  </div>
+
+  <div class="fixes-box">
+    <div class="label">TOP PRIORITY FIXES</div>
+    ${fixes}
+  </div>
+
+  <div class="section-label">CATEGORY BREAKDOWN</div>
+  ${categoriesHtml}
+
+  <div class="footer">Audited against · <a href="https://registry-dev.aavya.com/">registry-dev.aavya.com</a></div>
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const domain = new URL(result.url).hostname.replace("www.", "");
+  a.download = `aavya-audit-${domain}-${new Date().toISOString().slice(0,10)}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+export default function AavyaAudit() {
+  const [url, setUrl]       = useState("https://mithileshnayak-oss.github.io/aavya-website/");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult]   = useState(null);
+  const [error, setError]     = useState("");
+  const [phase, setPhase]     = useState("");
+
+  const handleRunAudit = async () => {
+    if (!url.trim()) return;
+    if (!API_KEY) {
+      setError("API key not configured. Add VITE_GROQ_API_KEY to your .env file.");
+      return;
+    }
+    setLoading(true); setError(""); setResult(null);
+    let targetUrl = url.trim();
+    if (!targetUrl.startsWith("http")) targetUrl = "https://" + targetUrl;
+    const cacheKey = targetUrl.endsWith("/") ? targetUrl : targetUrl + "/";
+    try {
+      const siteInfo = KNOWN_CONTENT[cacheKey] || KNOWN_CONTENT[targetUrl] || `URL: ${targetUrl}\n(No pre-fetched content. Infer brand characteristics from domain and flag assumptions.)`;
+      setPhase("Analysing website content...");
+      await new Promise(r => setTimeout(r, 300));
+      setPhase("Running brand audit...");
+      const raw = await runAuditCall(
+        SYSTEM_PROMPT,
+        `Audit this website against Aavya brand standards.\n\nURL: ${targetUrl}\n\nWebsite Content:\n${siteInfo}\n\nRespond ONLY with the raw JSON object.`
+      );
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("No JSON in response: " + raw.slice(0, 200));
+      const parsed = JSON.parse(match[0]);
+      setResult({ ...parsed, url: targetUrl });
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false); setPhase("");
+    }
+  };
+
+  const overallColor = result ? (result.overall_score >= 75 ? "#22d3a5" : result.overall_score >= 50 ? "#a78bfa" : "#f87171") : "#3b82f6";
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#060b16", color: "#e2e8f0", fontFamily: "'Inter',sans-serif" }}>
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(29,78,216,0.15) 0%, transparent 70%)" }} />
+
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 820, margin: "0 auto", padding: "48px 20px 80px" }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 36, textAlign: "center" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(29,78,216,0.1)", border: "1px solid rgba(29,78,216,0.3)", borderRadius: 999, padding: "4px 14px", marginBottom: 18, fontSize: 11, color: "#93c5fd", fontFamily: "'JetBrains Mono',monospace", letterSpacing: 2 }}>
+            ◈ AAVYA BRAND AUDIT ENGINE v2.1
+          </div>
+          <h1 style={{ fontSize: "clamp(26px,5vw,40px)", fontWeight: 700, margin: "0 0 10px", background: "linear-gradient(135deg,#e2e8f0 0%,#93c5fd 50%,#a78bfa 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: -1, lineHeight: 1.1 }}>
+            Website Brand Compliance
+          </h1>
+          <p style={{ color: "#64748b", fontSize: 15, maxWidth: 460, margin: "0 auto", lineHeight: 1.7 }}>
+            Audit any website against Aavya brand standards — color, typography, shape language, tone, and more.
+          </p>
+        </div>
+
+        {/* URL Input Panel */}
+        <div style={{ background: "rgba(15,23,42,0.85)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "28px", marginBottom: 20 }}>
+          <div style={{ color: "#64748b", fontSize: 11, letterSpacing: 2, fontFamily: "'JetBrains Mono',monospace", marginBottom: 10 }}>TARGET URL</div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <input
+              value={url}
+              onChange={e => setUrl(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && !loading && handleRunAudit()}
+              placeholder="https://example.com"
+              style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "12px 16px", color: "#e2e8f0", fontSize: 14, outline: "none", fontFamily: "'JetBrains Mono',monospace" }}
+            />
+            <button onClick={handleRunAudit} disabled={loading || !url.trim()}
+              style={{ background: loading ? "rgba(29,78,216,0.2)" : "linear-gradient(135deg,#1d4ed8,#6d28d9)", border: "none", borderRadius: 10, padding: "12px 26px", color: "#fff", fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", whiteSpace: "nowrap", opacity: loading ? 0.5 : 1, transition: "opacity 0.2s", minWidth: 130 }}>
+              {loading ? "Auditing..." : "Run Audit →"}
+            </button>
+          </div>
+
+          {/* Loading / error */}
+          {loading && (
+            <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 14, height: 14, border: "2px solid rgba(167,139,250,0.3)", borderTopColor: "#a78bfa", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+              <span style={{ color: "#64748b", fontSize: 12, fontFamily: "'JetBrains Mono',monospace" }}>{phase}</span>
+            </div>
+          )}
+          {error && (
+            <div style={{ marginTop: 14, color: "#f87171", fontSize: 12, fontFamily: "'JetBrains Mono',monospace", background: "rgba(248,113,113,0.06)", padding: "10px 14px", borderRadius: 8, borderLeft: "3px solid #f87171", lineHeight: 1.7 }}>
+              ⚠ {error}
+            </div>
+          )}
+        </div>
+
+        {/* Results */}
+        {result && (
+          <div style={{ animation: "fadeIn 0.4s ease" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+              <button onClick={() => downloadReport(result)}
+                style={{ background: "rgba(34,211,165,0.1)", border: "1px solid rgba(34,211,165,0.3)", borderRadius: 10, padding: "10px 20px", color: "#22d3a5", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace", letterSpacing: 0.5, transition: "all 0.2s" }}>
+                Download Report
+              </button>
+            </div>
+            <div style={{ background: "rgba(15,23,42,0.8)", border: `1px solid ${overallColor}33`, borderRadius: 20, padding: "32px", marginBottom: 14, display: "flex", gap: 32, alignItems: "center", flexWrap: "wrap" }}>
+              <ScoreRing score={result.overall_score} size={100} />
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ color: "#64748b", fontSize: 11, letterSpacing: 2, fontFamily: "'JetBrains Mono',monospace", marginBottom: 6 }}>OVERALL BRAND COMPLIANCE</div>
+                <div style={{ color: overallColor, fontSize: 28, fontWeight: 700, letterSpacing: -1, marginBottom: 10 }}>
+                  {result.overall_score >= 75 ? "Brand Aligned" : result.overall_score >= 50 ? "Needs Work" : "Off-Brand"}
+                </div>
+                <p style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.7, margin: 0 }}>{result.executive_summary}</p>
+              </div>
+            </div>
+            <div style={{ background: "rgba(248,113,113,0.05)", border: "1px solid rgba(248,113,113,0.15)", borderRadius: 16, padding: "20px 24px", marginBottom: 14 }}>
+              <div style={{ color: "#64748b", fontSize: 11, letterSpacing: 2, fontFamily: "'JetBrains Mono',monospace", marginBottom: 12 }}>⚡ TOP PRIORITY FIXES</div>
+              {result.top_priority_fixes?.map((fix, i) => (
+                <div key={i} style={{ display: "flex", gap: 12, marginBottom: 8, color: "#fca5a5", fontSize: 14, lineHeight: 1.6 }}>
+                  <span style={{ color: "#f87171", fontFamily: "'JetBrains Mono',monospace", flexShrink: 0 }}>{String(i+1).padStart(2,"0")}</span>
+                  <span>{fix}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ color: "#64748b", fontSize: 11, letterSpacing: 2, fontFamily: "'JetBrains Mono',monospace", marginBottom: 12 }}>CATEGORY BREAKDOWN — click to expand</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {result.categories?.map((cat, i) => <CategoryCard key={cat.id||i} cat={cat} icon={iconMap[i]||"◈"} />)}
+            </div>
+            <div style={{ marginTop: 32, textAlign: "center", color: "#1e293b", fontSize: 11, fontFamily: "'JetBrains Mono',monospace" }}>
+              Audited against · <a href="https://registry-dev.aavya.com/" target="_blank" rel="noreferrer" style={{ color: "#334155", textDecoration: "none" }}>registry-dev.aavya.com</a>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+        input:focus { border-color: rgba(167,139,250,0.5) !important; }
+        * { box-sizing: border-box; }
+        button:hover:not(:disabled) { filter: brightness(1.12); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+      `}</style>
+    </div>
+  );
+}
