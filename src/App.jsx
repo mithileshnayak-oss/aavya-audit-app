@@ -2,7 +2,7 @@ import { useState } from "react";
 
 // ─── Config (from .env) ───────────────────────────────────────────────────────
 const API_KEY   = import.meta.env.VITE_GROQ_API_KEY || "";
-const MODEL_ID  = "llama-3.3-70b-versatile";
+const MODEL_ID  = "openai/gpt-oss-120b";
 const API_URL   = "https://api.groq.com/openai/v1/chat/completions";
 
 // ─── API Caller ───────────────────────────────────────────────────────────────
