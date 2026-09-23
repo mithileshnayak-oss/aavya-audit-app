@@ -117,17 +117,15 @@ CRITICAL: Return ONLY a raw JSON object — no markdown, no backticks, nothing e
 
 // ─── Known Content Cache ──────────────────────────────────────────────────────
 const KNOWN_CONTENT = {
-  "https://mithileshnayak-oss.github.io/aavya-website/": `
-Title: Aavya - Your Digital Transformation Partner
-Nav: AAVYA | Training▼ (Curriculums, Certifications) | Services▼ (Consultancy, Staff Augmentation) | Industry Solutions | About | Contact | ☰ hamburger icon
-Hero: "Master Digital Transformation Through Expert Training and Consultancy" / "Empowering organizations with comprehensive training programs, strategic consulting, and expert talent solutions." CTAs: "Get Started", "Request a Demo"
-Stats: 9 Comprehensive Curriculums | 28 Training Pillars | 1000+ Trained Professionals | 10+ Enterprise Clients
-Cards: 🎓 Training & Certification, 💼 Consultancy Services, 👥 Staff Augmentation — each with ✓ bullet lists
-Why Aavya: 🎯 Outcome-Driven | 📚 Knowledge Transfer | 🚀 Proven Methodology
-Industries: ⚡💰🏥🏭🏛️🛍️📡🚚✈️ emoji grid
-Contact form: Name, Email, Company, Industry dropdown, Message, Submit
-Footer: 4 columns — © 2024 Aavya — contact@aavya.com
-Design signals: Heavy emoji throughout the page. "🏆 Your Success Partner" promotional badge. Bullet-list-heavy layout. Generic hamburger nav. No Inter or JetBrains Mono fonts. No Aavya color system (Indigo #4F46E5 primary / Cyan #3AADDD accent / Mint #2CB67D). Copy is promotional and hype-heavy ("Master", "Empowering", exclamation-style enthusiasm) — violates Clarity/Honesty/no-hype tone rules and uses jargon the voice guide flags (e.g. "comprehensive", "solutions"). No soft geometry or rounded design language. Stock-photo-style imagery likely — violates the marketing-imagery cool-palette rule if warm-toned. No glassmorphism or dark surface palette. Characters/emoji used as icons — prohibited. Skeuomorphic or generic button styles. No visible logo lockup per spec (clear space / correct variant unknown).
+  "https://aavya.com/": `
+Title: Aavya: Turning Enterprise Data into Experiences That Drive Productivity
+Nav: AAVYA (gradient V-glyph logomark) | Company▼ | Solutions▼ | Insights▼ | Careers▼ | "Partner With Us" CTA button | dark-mode toggle
+Hero: "Transforming Enterprise Data Into Experiences That Drive Productivity." — headline gradient-text ("Experiences That Drive Productivity" in cyan-to-indigo gradient). Subhead: "Empower your business with connected intelligence through operationalized data, autonomous workflows and AI agents that drives measurable business outcomes."
+Three pillar cards: Ontology First Design, Autonomous Workflows, Enterprise-Ready AI Agents — each with a glowing neon-style abstract illustration (particle/circuit art in violet/cyan/green) above a heading and 1-2 sentence description.
+Further sections: "Why Aavya" (problem-shift-result), Ontology deep-dive, Autonomous Workflows governance detail, "AI Built for Where Your Business Is Headed Next" (AI Applications), The Aavya Experience, How We Help (consulting/intelligence/managed services), partnership inquiry form, FAQ, global office map (USA, New Delhi/India, Singapore, Japan).
+Footer: logomark + "Turning enterprise data into experiences that drive productivity." tagline, social icons (LinkedIn, Instagram, X, YouTube), Solutions/Company/Legal link columns, "©2026 Aavya. All rights reserved."
+Measured (via computed styles, not assumed): body font-family resolves to "Inter, Inter Fallback, system-ui" and canvas glyph-width test confirms Inter is actually rendering (not just declared) — correct token compliance. Body background rgb(250,251,252) = #FAFBFC, text rgb(30,35,56) = #1E2338 — exact light-mode token match. Primary CTA button background rgb(79,70,229) = #4F46E5 (--primary) with ~11px radius, matching radius-md. No warm/red/orange/yellow tones observed in UI chrome.
+Design signals: Strongly on-brand — correct color tokens, correct working Inter typography, rounded cards, calm/generous spacing, cool-toned neon illustrations (no warm-dominant imagery). Copy mixes clear value statements with some enterprise-marketing phrasing worth checking against the tone guide's plain-language/no-jargon rules. One flag: the "Enterprise-Ready AI Agents" hero illustration renders three glowing humanoid figures with visible faces — borderline against the "no mascots/robots with faces" prohibition even though stylistically abstract/circuit-themed rather than cartoonish.
 `.trim(),
 
   "https://registry-dev.aavya.com/": `
@@ -349,7 +347,7 @@ function downloadReport(result) {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function AavyaAudit() {
-  const [url, setUrl]       = useState("https://mithileshnayak-oss.github.io/aavya-website/");
+  const [url, setUrl]       = useState("https://aavya.com/");
   const [loading, setLoading] = useState(false);
   const [result, setResult]   = useState(null);
   const [error, setError]     = useState("");
