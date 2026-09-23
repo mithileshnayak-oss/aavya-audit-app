@@ -147,6 +147,19 @@ Components: Aavya Header, Header-Center, Breadcrumbs, Theme Toggle, AI Image Stu
 Tone: 5 traits (Clarity, Connection, Momentum, Honesty, Excitement), <25-word sentences, we/you/us, no corporate jargon
 Design signals: Fully on-brand. Dark SaaS aesthetic. Abstract geometric design. No emoji in UI. Mathematical precision. Warm colors absent from marketing imagery (though allowed for functional error/warning UI states). No real-world photography. No skeuomorphism. No brush strokes. Floating elements with generous negative space.
 `.trim(),
+
+  "https://registry.aavya.com/": `
+Title: Aavya Brand Portal (v4.1, light theme by default)
+Tagline: "Your central hub for brand guidelines, assets, design tokens, templates, and code components. Premium, minimal, calm, and technical."
+Nav (left sidebar): Brand Guidelines | Design Tokens | Registry | Showcase | Assets (marked "Soon") | Export (marked "Soon") | Search (⌘K) | Internal (marked "Team")
+Homepage structure: 3-layer explainer cards — Layer 1 "Brand Guidelines" (the why — mission, voice, colour intent, usage rules), Layer 2 "Design Tokens" (the what — named values that translate guidelines into code), Layer 3 "Design Code Registry" (the how — installable components/blocks). Below that: Showcase, Assets (soon), Export (soon) cards, then a "Recent Activity" changelog feed.
+Changelog entry visible on page (Apr 2026, "Brand Reconciliation v4.1"): "Indigo (#4F46E5) is now the single primary. Old periwinkle #6862e4 and Electric Violet #7F5AF0 retired. Mint demoted to success-only. Navy deepened. Logo V-glyph right half updated to match." This is the portal confirming its own current token values.
+Measured colors (via computed styles): body background rgb(250,251,252) = #FAFBFC, body text rgb(30,35,56) = #1E2338 — exact match to the documented light-mode --background/--foreground tokens.
+Measured typography (via loaded @font-face + canvas glyph-width comparison, not just CSS declarations): Inter and JetBrains Mono font files ARE declared/loadable on the page, but body and nav text actually renders in the browser's system UI font stack (ui-sans-serif/system-ui), not Inter — the rendered glyph widths match the system font, not Inter, even after forcing Inter to load. This is a real typography-token compliance gap on the portal itself, not a missing-data placeholder.
+Shape language: content cards (Layer 1/2/3, Showcase, Assets, Export) use soft rounded corners consistent with the radius tokens; no sharp corners visible on primary content surfaces. Category badges ("Layer 1/2/3") are small rounded pill tags in pastel lavender/blue/green.
+Logo: gradient V-glyph mark (indigo-to-cyan gradient) in the top-left, paired with "Brand" wordmark text, small "v4.1" version tag beside it.
+No warm/red/orange/yellow color observed anywhere on the homepage.
+`.trim(),
 };
 
 // ─── UI Atoms ─────────────────────────────────────────────────────────────────
