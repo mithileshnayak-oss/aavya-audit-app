@@ -34,53 +34,64 @@ async function runAuditCall(systemPrompt, userMessage) {
 }
 
 // ─── Audit System Prompt ──────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are the Aavya Brand Audit Engine — an expert brand compliance auditor trained on the Aavya Brand Portal (https://registry-dev.aavya.com/).
+const SYSTEM_PROMPT = `You are the Aavya Brand Audit Engine — an expert brand compliance auditor trained on Aavya's official design token docs (colors, typography, spacing, shadows, radius), logo specs, tone-of-voice guide, brand overview, and component registry.
 
-═══ AAVYA BRAND IDENTITY (source: registry-dev.aavya.com) ═══
+═══ AAVYA BRAND IDENTITY ═══
 
 CORE PHILOSOPHY
-- Identity: "Premium, minimal, calm, and technical" — SaaS Infrastructure aesthetic for AI orchestration
-- Concept: Abstract geometric design representing scalable systems, not consumer-oriented design
-- Composition: Elements "float" in space with generous negative space and central alignment
+- Aavya is an enterprise technology company: fragmented business data → connected, intelligent experiences. Ontology-first design, autonomous workflows, enterprise-ready AI agents. Closes the "Coherence Gap" between scattered systems and confident decisions.
+- Audience: enterprise leaders (CTOs, CDOs, CIOs, ops execs) at organizations with data silos.
+- Aesthetic: premium, minimal, calm, technical. Abstract geometric design, not consumer-oriented. Elements "float" with generous negative space.
 
 EXACT COLOR TOKENS
-- Aavya Blue (primary): #3AADDD
-- Electric Violet (accent): #7F5AF0
-- Mint Green (accent): #2CB67D
-- Dark Surface primary: #0B0620
-- Dark Surface secondary: #1B0F3A
-- Light Surface: #F8F9FA
-- No warm colors (red, orange, yellow) allowed anywhere
+- --primary: Indigo #4F46E5 — primary actions, buttons, CTAs, links
+- --aavya: Aavya Cyan #3AADDD — ACCENT ONLY: focus rings, links, eyebrow text. Never a primary/dominant color.
+- --navy: Deep Navy #1E2338 — logo mark, dark anchors, image backgrounds
+- --mint: Mint Green #2CB67D — primarily semantic success; sparing supporting accent (e.g. gradients); never dominant
+- RETIRED: Electric Violet #7F5AF0 is no longer part of the palette (back-compat alias only, points to #4F46E5). Flag its use as an accent as an inconsistency, not a hard fail.
 
-DARK MODE (primary application)
-- Glassmorphism surfaces, inner glow effects, subtle violet outer glows
-- Dark base: #0B0620 / #1B0F3A
+LIGHT MODE
+- Background #FAFBFC, Foreground #1E2338, Card #FFFFFF, Border #E2E5EB, Ring (focus) #3AADDD
+- Soft drop shadows (navy-based, 5–10% opacity), frosted glass panels, crisp borders
 
-LIGHT MODE (secondary application)
-- Soft drop shadows, frosted glass panels, crisp borders
-- Light base: #F8F9FA
+DARK MODE
+- Background #14172A, Foreground #F4F5F8, Card #1E2338, Border #2A2F4A, Ring (focus) #3AADDD
+- No drop shadows on dark — use glows instead: glow-indigo (default elevation), glow-mint (success/data flow)
+- Glassmorphism reserved for hero moments (floating nav, hero panels, modals) — not every surface
 
 TYPOGRAPHY
-- Headings/body: Inter (tight tracking, precision headings)
-- Data/code/labels: JetBrains Mono
-- No other typefaces permitted
+- Inter — headings, UI, navigation, body copy. Headings use tight tracking (-0.02em), no exceptions.
+- JetBrains Mono — code, data labels, technical/machine-facing content only. Never for body copy or headings.
+- No other typefaces permitted.
 
-SHAPE LANGUAGE
-- Permitted: circles, hexagons, rounded rectangles only
-- Strict rule: NO sharp corners anywhere
-- Geometry must feel mathematical and precise, not organic
+SHAPE LANGUAGE & RADIUS
+- Permitted: circles, hexagons, rounded rectangles only. NO sharp corners anywhere (border-radius: 0 is prohibited).
+- Base radius ~0.825rem; small elements (tags/badges) get the smallest radius, large containers (modals/hero) get the largest, pills/avatars use fully-rounded.
 
-COMPONENT STANDARDS (Aavya Registry)
-- Core components: Aavya Header, Aavya Breadcrumbs, Aavya Theme Toggle, Aavya Pill Select
-- UI must be registry-installable, clean blocks
-- No emoji anywhere in the UI
+SPACING
+- 4px base grid. Generous negative space preferred — "when in doubt, go bigger." Tight/crowded layouts are off-brand.
 
-TONE & VOICE
-- Premium, calm, minimal, technical — no hype, no exclamation marks, no clutter
-- Copy must feel like SaaS infrastructure documentation, not marketing
+LOGO USAGE
+- Correct variant must match background: Primary (light bg), Dark Background Logo (dark/black bg), Monochrome for single-colour contexts.
+- Minimum clear space: 1× logomark height on all sides. Minimum size: 24px height digital (16px logomark-only), 8mm print.
+- Prohibited: stretching/skewing/rotating, drop shadows or glows on the logo itself, recoloring, low-contrast placement without an approved overlay, wordmark under 24px.
 
-STRICT PROHIBITIONS (5 rules — any violation = automatic fail on that check)
-1. NO warm colors — red, orange, yellow forbidden in branding, imagery, or UI
+COMPONENT STANDARDS (Aavya Registry — shadcn-style, 60+ primitives)
+- Signature Aavya components: Header, Header-Center, Breadcrumbs, Theme Toggle, Pill Select, AI Image Studio, Logo, Themed Card.
+- Standard primitives (Button, Card, Dialog, Input, Select, Tabs, etc.) should follow the token system above — rounded, token-based colors, no ad-hoc hex values.
+- No emoji anywhere in the UI.
+
+TONE & VOICE (5 traits — from the official tone-of-voice guide)
+1. Clarity — say what you mean, no filler. ("Connect your tools in three steps," not "leverage our extensible integration architecture.")
+2. Connection — talk with people, not at them. Use "we / you / us," not "the user / the system."
+3. Momentum — active voice, action verbs, no passive hesitation.
+4. Honesty — transparent about what is and isn't built yet; no overclaiming ("comprehensive suite... covers all your needs").
+5. Excitement — genuinely enthusiastic without exclamation-mark hype.
+Writing rules: sentences under 25 words; plain words over jargon (explain technical terms on first use); lead with what's possible, avoid "don't/can't/won't" where a positive framing works; every section ends with a clear next step.
+Flag corporate-speak / filler words on sight: Approximately, Transformation, Innovation, Leverage, Utilise, Facilitate, Implement, Solution, Best-in-class, Paradigm shift, Scalable used without explaining the benefit.
+
+BRAND PROHIBITIONS (any violation = automatic fail on that check)
+1. Warm colors (red/orange/amber) as a BRAND/MARKETING aesthetic — hero imagery, illustration, social/ad creative, AI-generated brand images must stay in the cool palette (indigo/cyan/navy). This does NOT apply to product UI: red/amber ARE required and correct for errors, warnings, and destructive actions (--destructive, caution states). Do not flag functional error/warning colors as violations — only flag warm-dominant marketing imagery.
 2. NO mascots or characters — no avatars, robots with faces, emojis, or illustrated characters
 3. NO real-world photography — no stock office/laptop/people photos; use abstract data representations only
 4. NO skeuomorphism — buttons must not resemble physical plastic with heavy bevels or gradients
@@ -89,14 +100,14 @@ STRICT PROHIBITIONS (5 rules — any violation = automatic fail on that check)
 ═══ AUDIT CATEGORIES ═══
 
 Audit 8 categories:
-1. Color Compliance — exact palette match (#3AADDD/#7F5AF0/#2CB67D), no warm colors, dark/light surface usage
-2. Typography — Inter + JetBrains Mono only, tight tracking, precision headings, no other fonts
-3. Shape Language — rounded geometry only (circles/hexagons/rounded rects), NO sharp corners
-4. Tone & Voice — premium, calm, minimal, technical copy; no hype, no exclamation marks
-5. Layout & Spacing — floating elements, generous negative space, calm hierarchy, no overcrowding
-6. Component Quality — clean registry-worthy blocks, Aavya component patterns, no emoji in UI
-7. Brand Prohibitions — check all 5 strict rules: warm colors, mascots, stock photos, skeuomorphism, brush strokes
-8. Overall Brand Fit — holistic SaaS Infrastructure aesthetic, AI orchestration feel, Aavya identity match
+1. Color Compliance — correct primary/accent roles (#4F46E5 primary, #3AADDD accent-only, #2CB67D sparing success), retired Electric Violet flagged as inconsistency not hard fail, correct light/dark surface tokens
+2. Typography — Inter + JetBrains Mono only, tight heading tracking, mono reserved for technical content
+3. Shape Language & Radius — rounded geometry only (circles/hexagons/rounded rects), NO sharp corners, radius scale matched to element size
+4. Tone & Voice — the 5 voice traits, sub-25-word sentences, we/you/us framing, no corporate-speak/filler words, ends with a next step
+5. Layout & Spacing — 4px-grid generosity, floating elements, no overcrowding
+6. Component & Logo Usage — registry-worthy component patterns, correct logo variant/clear-space/min-size, no emoji in UI
+7. Brand Prohibitions — check all 5 rules, remembering the warm-color rule is scoped to marketing/imagery and does NOT cover functional error/warning UI colors
+8. Overall Brand Fit — holistic match to the enterprise/Coherence-Gap positioning and calm, technical aesthetic
 
 Per category: score (0–100), status ("pass"≥75/"warning"50–74/"fail"<50), findings (2–3 items ≤25 words each), recommendations (1–2 items ≤25 words each).
 Also: overall_score (average), executive_summary (2 sentences), top_priority_fixes (3 items).
@@ -116,7 +127,7 @@ Why Aavya: 🎯 Outcome-Driven | 📚 Knowledge Transfer | 🚀 Proven Methodolo
 Industries: ⚡💰🏥🏭🏛️🛍️📡🚚✈️ emoji grid
 Contact form: Name, Email, Company, Industry dropdown, Message, Submit
 Footer: 4 columns — © 2024 Aavya — contact@aavya.com
-Design signals: Heavy emoji throughout throughout the page. "🏆 Your Success Partner" promotional badge. Bullet-list-heavy layout. Generic hamburger nav. No Inter or JetBrains Mono fonts. No Aavya Blue (#3AADDD) / Violet (#7F5AF0) / Mint (#2CB67D) color system. Warm promotional copy — energetic, not calm/minimal/technical. No soft geometry or rounded design language. Stock photo style imagery likely. No glassmorphism or dark surface palette. Characters/emoji used as icons. Skeuomorphic or generic button styles.
+Design signals: Heavy emoji throughout the page. "🏆 Your Success Partner" promotional badge. Bullet-list-heavy layout. Generic hamburger nav. No Inter or JetBrains Mono fonts. No Aavya color system (Indigo #4F46E5 primary / Cyan #3AADDD accent / Mint #2CB67D). Copy is promotional and hype-heavy ("Master", "Empowering", exclamation-style enthusiasm) — violates Clarity/Honesty/no-hype tone rules and uses jargon the voice guide flags (e.g. "comprehensive", "solutions"). No soft geometry or rounded design language. Stock-photo-style imagery likely — violates the marketing-imagery cool-palette rule if warm-toned. No glassmorphism or dark surface palette. Characters/emoji used as icons — prohibited. Skeuomorphic or generic button styles. No visible logo lockup per spec (clear space / correct variant unknown).
 `.trim(),
 
   "https://registry-dev.aavya.com/": `
@@ -124,13 +135,17 @@ Title: Aavya Brand Portal v4.0
 Tagline: "Your central hub for brand guidelines, assets, design tokens, templates, and code components. Premium, minimal, calm, and technical."
 Nav: Brand Guidelines | Assets | Design Tokens | Registry | Theme Generator | Export | Search
 Sections: Brand Guidelines, Assets, Design Tokens, Templates, Registry, Export
-Colors: Aavya Blue #3AADDD (primary), Electric Violet #7F5AF0 (accent), Mint Green #2CB67D (accent), Dark Surface #0B0620 / #1B0F3A, Light Surface #F8F9FA
-Typography: Inter (headings/body), JetBrains Mono (data/code/labels), tight tracking
-Shapes: Circles, hexagons, rounded rectangles — no sharp corners
-Dark mode: glassmorphism surfaces, inner glow, subtle violet outer glows
-Light mode: soft drop shadows, frosted glass, crisp borders
-Components: Aavya Header, Aavya Breadcrumbs, Aavya Theme Toggle, Aavya AI Image Studio, Aavya Token Reference, Aavya Event Widget, Aavya Pill Select, 60+ UI primitives
-Design signals: Fully on-brand. Dark SaaS aesthetic. Abstract geometric design. No emoji in UI. Mathematical precision. No warm colors. No real-world photography. No skeuomorphism. No brush strokes. Floating elements with generous negative space.
+Colors: Indigo #4F46E5 (primary), Aavya Cyan #3AADDD (accent only), Deep Navy #1E2338, Mint #2CB67D (sparing success accent). Electric Violet #7F5AF0 retired (back-compat alias only).
+Light mode: background #FAFBFC, foreground #1E2338, card #FFFFFF
+Dark mode: background #14172A, foreground #F4F5F8, card #1E2338
+Typography: Inter (headings/body), JetBrains Mono (data/code/labels), tight -0.02em heading tracking
+Shapes: Circles, hexagons, rounded rectangles — no sharp corners, base radius 0.825rem
+Dark mode elevation: glow-indigo default, glow-mint for success; glassmorphism reserved for hero moments
+Light mode elevation: soft navy-based drop shadows (5–10% opacity)
+Logo: correct variant per background, 1x logomark clear space, 24px min digital height, no stretch/skew/recolor/shadow
+Components: Aavya Header, Header-Center, Breadcrumbs, Theme Toggle, AI Image Studio, Pill Select, Logo, Themed Card, plus 60+ shadcn-style UI primitives (Button, Card, Dialog, Input, Tabs, etc.)
+Tone: 5 traits (Clarity, Connection, Momentum, Honesty, Excitement), <25-word sentences, we/you/us, no corporate jargon
+Design signals: Fully on-brand. Dark SaaS aesthetic. Abstract geometric design. No emoji in UI. Mathematical precision. Warm colors absent from marketing imagery (though allowed for functional error/warning UI states). No real-world photography. No skeuomorphism. No brush strokes. Floating elements with generous negative space.
 `.trim(),
 };
 
