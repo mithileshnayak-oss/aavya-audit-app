@@ -158,6 +158,17 @@ Shape language: content cards (Layer 1/2/3, Showcase, Assets, Export) use soft r
 Logo: gradient V-glyph mark (indigo-to-cyan gradient) in the top-left, paired with "Brand" wordmark text, small "v4.1" version tag beside it.
 No warm/red/orange/yellow color observed anywhere on the homepage.
 `.trim(),
+
+  "https://foundry-dev.aavya.com/": `
+Title: Aavya — Palantir Implementation Partner | Foundry & AIP Practice
+Nav: Aavya logo | Why Aavya | What We Do▼ | Our Approach | Careers | Blog | dark/light toggle | "Partner With Us" pill CTA. Nav bar is a floating rounded capsule, not a flush-edge bar.
+Hero: "Building What's Next for Your Enterprise" — "We combine AI, data, and deep business expertise to transform how organizations operate, innovate, and grow - creating intelligent enterprises built for a rapidly changing world." CTAs: "See what we've built", "Talk to us". "PALANTIR CERTIFIED" partner-logo lockup with rotating claims (24×7 support, forward-deployed engineers).
+Sections: Palantir Services (7 service cards: Foundry Data Platform, Training & Enablement, Implementation & Migration, 24×7 Ops & Support, Application Development, Data Engineering, Ontology Development), "What We've Built" production case study (AI-Powered CRM), "The Aavya Execution Model" (old-consulting-vs-Aavya comparison table), 24/7 support stats, assessment-questionnaire CTA, footer with Locations (India, Singapore, Japan, USA) and Legal links.
+Measured (via computed styles, not assumed): dark mode active by default (html class "dark"). Body background rgb(20,23,42) = #14172A, text rgb(244,245,248) = #F4F5F8 — exact match to the documented dark-mode --background/--foreground tokens. Body font resolves to Inter and a canvas glyph-width test confirms Inter is actually rendering (correct, unlike registry.aavya.com). Primary CTA background rgb(79,70,229) = #4F46E5 (--primary), but its border-radius is 100px (fully pill-shaped) — the standard button elsewhere in the brand system (e.g. aavya.com) uses the smaller radius-md (~11px), so this is a real cross-page inconsistency in button shape, not a violation of the "no sharp corners" rule itself.
+REAL-WORLD PHOTOGRAPHY VIOLATION (confirmed, not assumed): the hero section has a <video> background element (src ends in "whyaavyabgvideo.mp4") showing real live-action office/boardroom footage — a literal photographic/video scene of a meeting table, not an abstract data representation. This directly violates the brand prohibition on real-world photography/imagery, which requires abstract data representations only.
+Other imagery: an actual product UI screenshot ("Human Resource Management System" app) in the case-study section — legitimate as a real "what we shipped" proof point, not decorative stock photography. A Palantir partner-logo lockup (third-party co-brand, not an Aavya asset) appears twice.
+No mascots/characters/emoji observed. No warm colors observed in UI chrome.
+`.trim(),
 };
 
 // ─── UI Atoms ─────────────────────────────────────────────────────────────────
